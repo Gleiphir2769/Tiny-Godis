@@ -1,8 +1,8 @@
 package main
 
 import (
+	"Tiny-Godis/lib/logger"
 	"Tiny-Godis/tcp"
-	"github.com/hdt3213/godis/lib/logger"
 	"time"
 )
 
