@@ -57,6 +57,8 @@ func MakeDB() *DB {
 	return &db
 }
 
+/* ---- Main Function ----- */
+
 func (db *DB) GetEntity(key string) (*DataEntity, bool) {
 	db.stopWait.Wait()
 
@@ -170,4 +172,30 @@ func (db *DB) IsExpired(key string) bool {
 		db.Remove(key)
 	}
 	return expired
+}
+
+/* ---- Version Function ----- */
+func (db *DB) addVersion(keys ...string) {
+	for _, key := range keys {
+		version := db.getVersion(key)
+		db.versionMap.Put(key, version+1)
+	}
+}
+
+func (db *DB) getVersion(key string) uint32 {
+	v, ok := db.versionMap.Get(key)
+	if ok {
+		return v.(uint32)
+	}
+	return 0
+}
+
+/* ---- Util Function ----- */
+
+func validateArity(arity int, cmdArgs [][]byte) bool {
+	argNum := len(cmdArgs)
+	if arity >= 0 {
+		return argNum == arity
+	}
+	return argNum >= -arity
 }
