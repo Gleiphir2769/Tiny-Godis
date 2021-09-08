@@ -64,7 +64,9 @@ func (db *DB) GetEntity(key string) (*DataEntity, bool) {
 	if !ok {
 		return nil, false
 	}
-	// todo: 判断过期
+	if db.IsExpired(key) {
+		return nil, false
+	}
 	entity, _ := raw.(*DataEntity)
 	return entity, true
 }
