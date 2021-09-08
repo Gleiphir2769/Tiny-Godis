@@ -3,6 +3,7 @@ package Tiny_Godis
 import (
 	"fmt"
 	"testing"
+	"time"
 )
 
 func TestDBFeature(t *testing.T) {
@@ -42,6 +43,24 @@ func TestDBFeature(t *testing.T) {
 	r = db.Removes("test")
 	if _, ok = db.GetEntity("test"); ok || r != 1 {
 		t.Error("db.Removes or db.Remove failed")
+		return
+	}
+}
+
+func TestDB_Expire(t *testing.T) {
+	db := MakeDB()
+	te := DataEntity{}
+	te.Data = "123123"
+	r := db.PutEntity("test", &te)
+	if r != 1 {
+		fmt.Println(r)
+		t.Error("db.Put failed")
+		return
+	}
+	db.Expire("test", time.Now().Add(time.Second))
+	time.Sleep(time.Second * 2)
+	if _, ok := db.GetEntity("test"); ok {
+		t.Error("db.Expire failed")
 		return
 	}
 }

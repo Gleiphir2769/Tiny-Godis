@@ -3,7 +3,11 @@ package Tiny_Godis
 import (
 	"Tiny-Godis/data_struct/dict"
 	"Tiny-Godis/data_struct/lock"
+	"Tiny-Godis/interface/redis"
+	"Tiny-Godis/lib/logger"
+	"Tiny-Godis/lib/timewheel"
 	"sync"
+	"time"
 )
 
 const (
@@ -26,6 +30,21 @@ type DB struct {
 type DataEntity struct {
 	Data interface{}
 }
+
+// ExecFunc is interface for command executor
+// args don't include cmd line
+type ExecFunc func(db *DB, args [][]byte) redis.Reply
+
+// PreFunc analyses command line when queued command to `multi`
+// returns related write keys and read keys
+type PreFunc func(args [][]byte) ([]string, []string)
+
+// CmdLine is alias for [][]byte, represents a command line
+type CmdLine = [][]byte
+
+// UndoFunc returns undo logs for the given command line
+// execute from head to tail when undo
+type UndoFunc func(db *DB, args [][]byte) []CmdLine
 
 func MakeDB() *DB {
 	db := DB{
@@ -69,9 +88,7 @@ func (db *DB) Remove(key string) (result int) {
 	db.stopWait.Wait()
 	r1 := db.data.Remove(key)
 	db.ttlMap.Remove(key)
-
-	// todo: ttl 相关处理
-
+	timewheel.Cancel(key)
 	return r1
 }
 
@@ -79,12 +96,76 @@ func (db *DB) Removes(keys ...string) (deleted int) {
 	db.stopWait.Wait()
 	for _, key := range keys {
 		r := db.Remove(key)
-
-		// todo: ttl 相关处理
-
 		if r == 1 {
 			deleted++
 		}
 	}
 	return deleted
+}
+
+/* ---- Lock Function ----- */
+
+// Lock lock key for writing
+func (db *DB) Lock(key string) {
+	db.locker.Lock(key)
+}
+
+// UnLock releases key for writing
+func (db *DB) UnLock(key string) {
+	db.locker.UnLock(key)
+}
+
+// RWLocks lock keys for writing and reading
+func (db *DB) RWLocks(writeKeys []string, readKeys []string) {
+	db.locker.RWLocks(writeKeys, readKeys)
+}
+
+// RWUnLocks unlock keys for writing and reading
+func (db *DB) RWUnLocks(writeKeys []string, readKeys []string) {
+	db.locker.RWUnLocks(writeKeys, readKeys)
+}
+
+/* ---- TTL Function ----- */
+
+// Expire set ttlcmd
+func (db *DB) Expire(key string, expireTime time.Time) {
+	db.stopWait.Wait()
+	db.ttlMap.Put(key, expireTime)
+
+	timewheel.At(expireTime, key, func() {
+		db.Lock(key)
+		defer db.UnLock(key)
+		logger.Info("expire " + key)
+		// double check: 因为等待落锁的过程中ttlmap可能已被改变（key 的过期事件发生变化，上锁的目的亦在此）（第一次check是由timeWheel完成的）
+		rawExpireTime, ok := db.ttlMap.Get(key)
+		if !ok {
+			return
+		}
+		ret := rawExpireTime.(time.Time)
+		expired := time.Now().After(ret)
+		if expired {
+			db.Remove(key)
+		}
+	})
+}
+
+func (db *DB) Persist(key string) {
+	db.stopWait.Wait()
+	db.ttlMap.Remove(key)
+	timewheel.Cancel(key)
+}
+
+// IsExpired check whether a key is expired (不直接查看db中是否有这个键来判断过期是因为时间轮并不保证精确过期)
+func (db *DB) IsExpired(key string) bool {
+	// 不直接查看db中是否有这个键来判断过期是因为时间轮并不保证精确过期
+	rawExpireTime, ok := db.ttlMap.Get(key)
+	if !ok {
+		return false
+	}
+	expireTime, _ := rawExpireTime.(time.Time)
+	expired := time.Now().After(expireTime)
+	if expired {
+		db.Remove(key)
+	}
+	return expired
 }
