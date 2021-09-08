@@ -20,7 +20,7 @@ type DB struct {
 
 	locker *lock.Locks
 
-	stopWait *sync.WaitGroup
+	stopWait sync.WaitGroup
 }
 
 type DataEntity struct {
@@ -53,4 +53,38 @@ func (db *DB) GetEntity(key string) (*DataEntity, bool) {
 func (db *DB) PutEntity(key string, value *DataEntity) int {
 	db.stopWait.Wait()
 	return db.data.Put(key, value)
+}
+
+func (db *DB) PutIfExists(key string, value *DataEntity) int {
+	db.stopWait.Wait()
+	return db.data.PutIfExists(key, value)
+}
+
+func (db *DB) PutIfAbsent(key string, value *DataEntity) int {
+	db.stopWait.Wait()
+	return db.data.PutIfAbsent(key, value)
+}
+
+func (db *DB) Remove(key string) (result int) {
+	db.stopWait.Wait()
+	r1 := db.data.Remove(key)
+	db.ttlMap.Remove(key)
+
+	// todo: ttl 相关处理
+
+	return r1
+}
+
+func (db *DB) Removes(keys ...string) (deleted int) {
+	db.stopWait.Wait()
+	for _, key := range keys {
+		r := db.Remove(key)
+
+		// todo: ttl 相关处理
+
+		if r == 1 {
+			deleted++
+		}
+	}
+	return deleted
 }

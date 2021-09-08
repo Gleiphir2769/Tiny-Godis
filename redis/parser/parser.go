@@ -2,11 +2,11 @@ package parser
 
 import (
 	"Tiny-Godis/interface/redis"
+	"Tiny-Godis/lib/logger"
 	"Tiny-Godis/redis/reply"
 	"bufio"
 	"bytes"
 	"fmt"
-	"github.com/hdt3213/godis/lib/logger"
 	"io"
 	"runtime/debug"
 	"strconv"
