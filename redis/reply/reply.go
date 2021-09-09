@@ -1,8 +1,8 @@
 package reply
 
 import (
+	"Tiny-Godis/interface/redis"
 	"bytes"
-	"github.com/hdt3213/godis/interface/redis"
 	"strconv"
 )
 
