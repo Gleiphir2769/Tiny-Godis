@@ -44,6 +44,7 @@ type CmdLine = [][]byte
 
 // UndoFunc returns undo logs for the given command line
 // execute from head to tail when undo
+// warning: undoFunc并不是真的回滚，而是返回一个回滚的命令序列给用户，让用户再去执行回滚的命令序列
 type UndoFunc func(db *DB, args [][]byte) []CmdLine
 
 func MakeDB() *DB {
