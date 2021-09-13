@@ -1,6 +1,6 @@
 package db
 
-import "github.com/hdt3213/godis/interface/redis"
+import "Tiny-Godis/interface/redis"
 
 // DB is the interface for redis style storage engine
 type DB interface {

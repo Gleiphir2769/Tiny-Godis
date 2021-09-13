@@ -1,11 +1,11 @@
 package tcp
 
 import (
+	"Tiny-Godis/lib/logger"
+	"Tiny-Godis/lib/sync/atomic"
+	"Tiny-Godis/lib/sync/wait"
 	"bufio"
 	"context"
-	"github.com/hdt3213/godis/lib/logger"
-	"github.com/hdt3213/godis/lib/sync/atomic"
-	"github.com/hdt3213/godis/lib/sync/wait"
 	"io"
 	"net"
 	"sync"

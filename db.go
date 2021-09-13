@@ -200,3 +200,13 @@ func validateArity(arity int, cmdArgs [][]byte) bool {
 	}
 	return argNum >= -arity
 }
+
+/* ---- Clean Function ----- */
+
+func (db *DB) Close() {
+
+}
+
+func (db *DB) AfterClientClose(c redis.Connection) {
+
+}

@@ -2,6 +2,7 @@ package main
 
 import (
 	"Tiny-Godis/lib/logger"
+	"Tiny-Godis/redis/server"
 	"Tiny-Godis/tcp"
 	"time"
 )
@@ -12,8 +13,8 @@ func main() {
 		MaxConnect: 10,
 		Timeout:    time.Second * 10,
 	}
-	sh := tcp.EchoHandler{}
-	err := tcp.ListenAndServeWithSignal(&config, &sh)
+	sh := server.MakeHandler()
+	err := tcp.ListenAndServeWithSignal(&config, sh)
 	if err != nil {
 		logger.Fatal(err)
 	}

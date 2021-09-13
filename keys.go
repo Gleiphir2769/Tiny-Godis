@@ -36,3 +36,8 @@ func execExists(db *DB, args [][]byte) redis.Reply {
 	}
 	return reply.MakeIntReply(int64(result))
 }
+
+func init() {
+	RegisterCommand("Del", execDel, writeAllKeys, undoDel, -2)
+	RegisterCommand("Exists", execExists, readAllKeys, nil, -2)
+}

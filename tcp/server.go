@@ -1,10 +1,11 @@
 package tcp
 
 import (
+	"Tiny-Godis/interface/tcp"
+	"Tiny-Godis/lib/logger"
 	"context"
 	"fmt"
-	"github.com/hdt3213/godis/interface/tcp"
-	"github.com/hdt3213/godis/lib/logger"
+
 	"net"
 	"os"
 	"os/signal"
@@ -13,7 +14,7 @@ import (
 	"time"
 )
 
-// handler 是应用层服务器的抽象
+// Handler 是应用层服务器的抽象
 type Handler interface {
 	Handle(ctx context.Context, conn net.Conn)
 	Close() error
@@ -26,7 +27,7 @@ type Config struct {
 	Timeout    time.Duration `yaml:"timeout"`
 }
 
-// 监听并提供服务，并在收到 closeChan 发来的关闭通知后关闭
+// ListenAndServe 监听并提供服务，并在收到 closeChan 发来的关闭通知后关闭
 func ListenAndServe(listener net.Listener, handler Handler, closeChan <-chan struct{}) {
 	// 监听关闭通知
 	go func() {
