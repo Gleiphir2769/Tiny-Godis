@@ -257,7 +257,7 @@ func parseSingleLineReply(msg []byte) (redis.Reply, error) {
 			return nil, fmt.Errorf("protocal error: %s", string(msg))
 		}
 		result = reply.MakeIntReply(val)
-	// todo: redis通信协议并没有text protocol
+	// 这里读的是redis命令，即既可以读SET key value\r\n 也可以*3\r\n$3\r\nSET\r\n$3\r\nkey\r\n$5\r\value\r\n
 	default:
 		strs := strings.Split(str, " ")
 		args := make([][]byte, len(strs))
