@@ -8,7 +8,7 @@ import (
 	"time"
 )
 
-func (db *DB) GetAsString(key string) ([]byte, reply.ErrorReply) {
+func (db *DB) getAsString(key string) ([]byte, reply.ErrorReply) {
 	entity, ok := db.GetEntity(key)
 	if !ok {
 		return nil, nil
@@ -22,7 +22,7 @@ func (db *DB) GetAsString(key string) ([]byte, reply.ErrorReply) {
 
 func execGet(db *DB, args [][]byte) redis.Reply {
 	key := string(args[0])
-	val, err := db.GetAsString(key)
+	val, err := db.getAsString(key)
 	if err != nil {
 		return err
 	}
@@ -58,7 +58,7 @@ func execSet(db *DB, args [][]byte) redis.Reply {
 				if policy == insertPolicy {
 					return &reply.SyntaxErrReply{}
 				}
-				policy = upsertPolicy
+				policy = updatePolicy
 			case "EX":
 				if ttl != unlimitedTTL || i+1 > len(args) {
 					return &reply.SyntaxErrReply{}
@@ -122,7 +122,36 @@ func execSet(db *DB, args [][]byte) redis.Reply {
 	return &reply.NullBulkReply{}
 }
 
+func execSetNx(db *DB, args [][]byte) redis.Reply {
+	key := args[0]
+	val := args[1]
+	entity := DataEntity{Data: val}
+	result := db.PutIfAbsent(string(key), &entity)
+	return reply.MakeIntReply(int64(result))
+}
+
+func execSetEx(db *DB, args [][]byte) redis.Reply {
+	key := args[0]
+	val := args[1]
+	entity := DataEntity{Data: val}
+	db.PutEntity(string(key), &entity)
+	temp := args[2]
+	raw, err := strconv.ParseInt(string(temp), 10, 64)
+	if err != nil {
+		return &reply.SyntaxErrReply{}
+	}
+	if raw < 0 {
+		return reply.MakeErrReply("Err Invalid expire time to set")
+	}
+	ttl := raw * 1000
+	expireTime := time.Now().Add(time.Duration(ttl) * time.Millisecond)
+	db.Expire(string(key), expireTime)
+	return &reply.OkReply{}
+}
+
 func init() {
 	RegisterCommand("Set", execSet, writeFirstKey, rollbackFirstKey, -3)
+	RegisterCommand("SetNx", execSetNx, writeFirstKey, rollbackFirstKey, -3)
+	RegisterCommand("SetEx", execSetEx, writeFirstKey, rollbackFirstKey, -3)
 	RegisterCommand("Get", execGet, readFirstKey, nil, 2)
 }

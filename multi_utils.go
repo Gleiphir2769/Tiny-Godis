@@ -1,6 +1,8 @@
 package Tiny_Godis
 
-import "Tiny-Godis/lib/utils"
+import (
+	"Tiny-Godis/lib/utils"
+)
 
 func readFirstKey(args [][]byte) ([]string, []string) {
 	// assert len(args) > 0
@@ -36,12 +38,13 @@ func noPrepare(args [][]byte) ([]string, []string) {
 func rollbackGivenKeys(db *DB, keys ...string) []CmdLine {
 	var undoCmdLines []CmdLine
 	for _, key := range keys {
-		if _, ok := db.GetEntity(key); ok {
+		if entity, ok := db.GetEntity(key); ok {
 			undoCmdLines = append(undoCmdLines, utils.ToCmdLine("DEL", key))
 		} else {
 			undoCmdLines = append(undoCmdLines,
-				utils.ToCmdLine("DEL", key))
-			// todo: 等待marshal模块完成
+				utils.ToCmdLine("DEL", key),
+				EntityToSetCmd(key, entity).Args,
+				toTTLCmd(db, key).Args)
 		}
 	}
 	return undoCmdLines
@@ -50,4 +53,21 @@ func rollbackGivenKeys(db *DB, keys ...string) []CmdLine {
 func rollbackFirstKey(db *DB, args [][]byte) []CmdLine {
 	key := string(args[0])
 	return rollbackGivenKeys(db, key)
+}
+
+func rollbackHashFields(db *DB, key string, fields ...string) []CmdLine {
+	var undoCmdLines []CmdLine
+	d, errReply := db.getAsDict(key)
+	if errReply != nil {
+		return nil
+	}
+	for _, field := range fields {
+		if entity, ok := d.Get(field); ok {
+			undoCmdLines = append(undoCmdLines, utils.ToCmdLine("HDEL", key, field))
+		} else {
+			value, _ := entity.([]byte)
+			undoCmdLines = append(undoCmdLines, utils.ToCmdLine("HSET", key, field, string(value)))
+		}
+	}
+	return undoCmdLines
 }
