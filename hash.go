@@ -4,8 +4,6 @@ import (
 	"Tiny-Godis/data_struct/dict"
 	"Tiny-Godis/interface/redis"
 	"Tiny-Godis/redis/reply"
-	"strconv"
-	"time"
 )
 
 func (db *DB) getAsDict(key string) (dict.Dict, reply.ErrorReply) {
@@ -67,19 +65,75 @@ func execHSetNX(db *DB, args [][]byte) redis.Reply {
 }
 
 func execHExists(db *DB, args [][]byte) redis.Reply {
+	key := args[0]
+	field := args[1]
 
+	d, err := db.getAsDict(string(key))
+	if err != nil {
+		return err
+	} else if d == nil {
+		return reply.MakeIntReply(0)
+	}
+
+	_, ok := d.Get(string(field))
+	if ok {
+		return reply.MakeIntReply(1)
+	}
+	return reply.MakeIntReply(0)
 }
 
 func execHDel(db *DB, args [][]byte) redis.Reply {
+	key := args[0]
+	fields := make([][]byte, len(args)-1)
+	for i := 1; i < len(args); i++ {
+		fields[i-1] = args[i]
+	}
 
+	d, err := db.getAsDict(string(key))
+	if err != nil {
+		return err
+	} else if d == nil {
+		return reply.MakeIntReply(0)
+	}
+
+	deleted := 0
+	for _, field := range fields {
+		r := d.Remove(string(field))
+		deleted += r
+	}
+
+	if d.Len() == 0 {
+		db.Remove(string(key))
+	}
+
+	if deleted > 0 {
+		//todo: aof
+	}
+
+	return reply.MakeIntReply(int64(deleted))
 }
 
 func undoHDel(db *DB, args [][]byte) []CmdLine {
+	key := args[0]
+	fields := make([]string, len(args)-1)
+	for i := 1; i < len(args); i++ {
+		fields[i-1] = string(args[i])
+	}
 
+	return rollbackHashFields(db, string(key), fields...)
 }
 
 func execHLen(db *DB, args [][]byte) redis.Reply {
+	key := args[0]
 
+	d, err := db.getAsDict(string(key))
+	if err != nil {
+		return err
+	} else if d == nil {
+		return reply.MakeIntReply(0)
+	}
+
+	return reply.MakeIntReply(int64(d.Len()))
 }
 
 func execHGet(db *DB, args [][]byte) redis.Reply {
