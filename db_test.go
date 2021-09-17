@@ -66,7 +66,7 @@ func TestDB_Expire(t *testing.T) {
 	}
 }
 
-func TestDB_Exec(t *testing.T) {
+func TestDB_ExecString(t *testing.T) {
 	db := MakeDB()
 	conn := connection.MakeConn(nil)
 	cmdLine := make([][]byte, 0)
@@ -89,5 +89,29 @@ func TestDB_Exec(t *testing.T) {
 	if !(string(rp.ToBytes()) == string(validresult)) {
 		fmt.Println(string(rp.ToBytes()))
 		t.Error("db.exec get failed")
+	}
+}
+
+func TestDB_ExecHash(t *testing.T) {
+	db := MakeDB()
+	conn := connection.MakeConn(nil)
+	cmdLine := make([][]byte, 0)
+	cls := []string{"HSET", "testKey", "testField", "testValue"}
+	for _, cl := range cls {
+		cmdLine = append(cmdLine, []byte(cl))
+	}
+	rp := db.Exec(conn, cmdLine)
+	if !(string(rp.ToBytes()) == ":1\r\n") {
+		fmt.Printf("HSET failed, get: %s", string(rp.ToBytes()))
+	}
+	ncls := []string{"HGET", "testKey", "testField"}
+	cmdLine2Get := make([][]byte, 0)
+	for _, cl := range ncls {
+		cmdLine2Get = append(cmdLine2Get, []byte(cl))
+	}
+	rp = db.Exec(conn, cmdLine2Get)
+	validresult := []byte("$" + "9" + "\r\n" + "testValue" + "\r\n")
+	if !(string(rp.ToBytes()) == string(validresult)) {
+		t.Error(fmt.Printf("HGET failed, get: %s", string(rp.ToBytes())))
 	}
 }
