@@ -13,7 +13,7 @@ type ConcurrentDict struct {
 
 type Shard struct {
 	m     map[string]interface{}
-	mutex sync.Mutex
+	mutex sync.RWMutex
 }
 
 func computeCapacity(param int) (size int) {
@@ -177,5 +177,23 @@ func (dict *ConcurrentDict) Remove(key string) (result int) {
 		return 1
 	} else {
 		return 0
+	}
+}
+
+func (dict *ConcurrentDict) ForEach(recall RecallFunc) {
+	if dict == nil {
+		return
+	}
+	for _, t := range dict.table {
+		// 这段加锁再释放的代码很精彩，灵活运用了匿名函数
+		t.mutex.RLock()
+		func() {
+			defer t.mutex.RUnlock()
+			for k, v := range t.m {
+				if recall(k, v) {
+					return
+				}
+			}
+		}()
 	}
 }

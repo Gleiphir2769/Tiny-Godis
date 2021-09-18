@@ -80,3 +80,11 @@ func (sd *SimpleDict) Remove(key string) (result int) {
 		return 0
 	}
 }
+
+func (sd *SimpleDict) ForEach(recall RecallFunc) {
+	for k, v := range sd.table {
+		if !recall(k, v) {
+			break
+		}
+	}
+}
