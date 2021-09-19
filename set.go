@@ -179,27 +179,165 @@ func execSInterStore(db *DB, args [][]byte) redis.Reply {
 }
 
 func execSUnion(db *DB, args [][]byte) redis.Reply {
+	keys := make([]string, len(args))
+	for i, arg := range args {
+		keys[i] = string(arg)
+	}
+	sets := make([]*set.Set, len(keys))
+	for _, key := range keys {
+		s, errReply := db.getAsSet(key)
+		if errReply != nil {
+			return errReply
+		}
+		if s == nil {
+			return &reply.EmptyMultiBulkReply{}
+		}
+		sets = append(sets, s)
+	}
+	if len(sets) <= 2 {
+		return &reply.EmptyMultiBulkReply{}
+	}
+	union := sets[0].Union(sets[1])
+
+	for i := 2; i < len(sets); i++ {
+		union = sets[i].Union(union)
+	}
+	result := make([][]byte, union.Len())
+	i := 0
+	union.ForEach(func(key string, val interface{}) bool {
+		result[i] = []byte(key)
+		i++
+		return true
+	})
+	return reply.MakeMultiBulkReply(result)
 }
 
 func execSUnionStore(db *DB, args [][]byte) redis.Reply {
+	dest := string(args[0])
+	keys := make([]string, len(args)-1)
+	keyArgs := args[1:]
+	for i, arg := range keyArgs {
+		keys[i] = string(arg)
+	}
+
+	sets := make([]*set.Set, len(keys))
+	for _, key := range keys {
+		s, errReply := db.getAsSet(key)
+		if errReply != nil {
+			return errReply
+		}
+		if s == nil {
+			return reply.MakeIntReply(0)
+		}
+		sets = append(sets, s)
+	}
+	if len(sets) <= 2 {
+		return reply.MakeIntReply(0)
+	}
+	union := sets[0].Union(sets[1])
+	for i := 2; i < len(sets); i++ {
+		union = sets[i].Union(union)
+	}
+
+	db.PutEntity(dest, &DataEntity{Data: union})
+
+	return reply.MakeIntReply(int64(union.Len()))
 }
 
 func execSDiff(db *DB, args [][]byte) redis.Reply {
+	keys := make([]string, len(args))
+	for i, arg := range args {
+		keys[i] = string(arg)
+	}
+	sets := make([]*set.Set, len(keys))
+	for _, key := range keys {
+		s, errReply := db.getAsSet(key)
+		if errReply != nil {
+			return errReply
+		}
+		if s == nil {
+			return &reply.EmptyMultiBulkReply{}
+		}
+		sets = append(sets, s)
+	}
+	if len(sets) <= 2 {
+		return &reply.EmptyMultiBulkReply{}
+	}
+	diff := sets[0].Diff(sets[1])
+
+	for i := 2; i < len(sets); i++ {
+		diff = sets[i].Diff(diff)
+	}
+	result := make([][]byte, diff.Len())
+	i := 0
+	diff.ForEach(func(key string, val interface{}) bool {
+		result[i] = []byte(key)
+		i++
+		return true
+	})
+	return reply.MakeMultiBulkReply(result)
 }
 
 func execSDiffStore(db *DB, args [][]byte) redis.Reply {
+	dest := string(args[0])
+	keys := make([]string, len(args)-1)
+	keyArgs := args[1:]
+	for i, arg := range keyArgs {
+		keys[i] = string(arg)
+	}
+
+	sets := make([]*set.Set, len(keys))
+	for _, key := range keys {
+		s, errReply := db.getAsSet(key)
+		if errReply != nil {
+			return errReply
+		}
+		if s == nil {
+			return reply.MakeIntReply(0)
+		}
+		sets = append(sets, s)
+	}
+	if len(sets) <= 2 {
+		return reply.MakeIntReply(0)
+	}
+	diff := sets[0].Diff(sets[1])
+	for i := 2; i < len(sets); i++ {
+		diff = sets[i].Diff(diff)
+	}
+
+	db.PutEntity(dest, &DataEntity{Data: diff})
+
+	return reply.MakeIntReply(int64(diff.Len()))
 }
 
+// undoSetChange rollbacks SADD and SREM command
 func undoSetChange(db *DB, args [][]byte) []CmdLine {
-
+	key := args[0]
+	members := make([]string, len(args)-1)
+	for i := 1; i < len(args); i++ {
+		members[i-1] = string(args[i])
+	}
+	return rollbackSetMembers(db, string(key), members...)
 }
 
+// prepareSetCalculate return which sets will be calculated
 func prepareSetCalculate(args [][]byte) ([]string, []string) {
-
+	keys := make([]string, len(args))
+	for i, arg := range args {
+		keys[i] = string(arg)
+	}
+	return nil, keys
 }
 
+// prepareSetCalculateStore return the store destination and sets will be calculated
 func prepareSetCalculateStore(args [][]byte) ([]string, []string) {
-
+	dest := string(args[0])
+	keys := make([]string, len(args)-1)
+	keyArgs := args[1:]
+	for i, arg := range keyArgs {
+		keys[i] = string(arg)
+	}
+	return []string{dest}, keys
 }
 
 func init() {

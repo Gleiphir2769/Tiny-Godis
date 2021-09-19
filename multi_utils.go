@@ -61,12 +61,36 @@ func rollbackHashFields(db *DB, key string, fields ...string) []CmdLine {
 	if errReply != nil {
 		return nil
 	}
+	if d == nil {
+		undoCmdLines = append(undoCmdLines, utils.ToCmdLine("DEL", key))
+		return undoCmdLines
+	}
 	for _, field := range fields {
-		if entity, ok := d.Get(field); ok {
+		if entity, ok := d.Get(field); !ok {
 			undoCmdLines = append(undoCmdLines, utils.ToCmdLine("HDEL", key, field))
 		} else {
 			value, _ := entity.([]byte)
 			undoCmdLines = append(undoCmdLines, utils.ToCmdLine("HSET", key, field, string(value)))
+		}
+	}
+	return undoCmdLines
+}
+
+func rollbackSetMembers(db *DB, key string, members ...string) []CmdLine {
+	var undoCmdLines []CmdLine
+	s, errReply := db.getAsSet(key)
+	if errReply != nil {
+		return nil
+	}
+	if s == nil {
+		undoCmdLines = append(undoCmdLines, utils.ToCmdLine("DEL", key))
+		return undoCmdLines
+	}
+	for _, member := range members {
+		if !s.Has(member) {
+			undoCmdLines = append(undoCmdLines, utils.ToCmdLine("SREM", key, member))
+		} else {
+			undoCmdLines = append(undoCmdLines, utils.ToCmdLine("SADD", key, member))
 		}
 	}
 	return undoCmdLines
