@@ -1,21 +1,43 @@
 package main
 
 import (
+	"Tiny-Godis/core"
+	"Tiny-Godis/lib/config"
 	"Tiny-Godis/lib/logger"
 	"Tiny-Godis/redis/server"
 	"Tiny-Godis/tcp"
-	"time"
 )
 
+var banner = `
+ _____  _                ____           _  _      
+|_   _|(_)_ __  _   _   / ___| ___   __| |(_) ___ 
+  | |  | | '_ \| | | | | |  _ / _ \ / _  || |/ __|
+  | |  | | | | | |_| | | |_| | (_) | (_| || |\__ \
+  |_|  |_|_| |_|\__, |  \____|\___/ \__,_||_||___/
+                |___/
+`
+
 func main() {
-	config := tcp.Config{
-		Address:    "127.0.0.1:9090",
-		MaxConnect: 10,
-		Timeout:    time.Second * 10,
-	}
-	sh := server.MakeHandler()
-	err := tcp.ListenAndServeWithSignal(&config, sh)
+	print(banner)
+	logger.Setup(&logger.Settings{
+		Path:       "logs",
+		Name:       "godis",
+		Ext:        "log",
+		TimeFormat: "2006-01-02",
+	})
+	err := core.Init()
 	if err != nil {
 		logger.Fatal(err)
+		panic(err)
+	}
+	cfg := tcp.Config{
+		Address:    config.Properties.Bind,
+		MaxConnect: uint32(config.Properties.MaxClients),
+	}
+	sh := server.MakeHandler()
+	err = tcp.ListenAndServeWithSignal(&cfg, sh)
+	if err != nil {
+		logger.Fatal(err)
+		panic(err)
 	}
 }

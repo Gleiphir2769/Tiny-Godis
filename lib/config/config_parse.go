@@ -6,7 +6,7 @@ func initViper() error {
 	if Flag.Cfg != "" {
 		viper.SetConfigFile(Flag.Cfg)
 	} else {
-		viper.AddConfigPath("../../")
+		viper.AddConfigPath(".")
 		viper.SetConfigName("config")
 	}
 	viper.SetConfigType("yaml")
