@@ -9,7 +9,7 @@ Step1: Complete the tcp server and redis protocol parser, which can correctly pa
 
 Step2: Complete the basic data structure required by redis, such as list, set, hash table, etc.
 
-Step3: Complete redis command abstract excuse, you can register, find, and execute commands correctly.
+Step3: Complete redis command abstract excuse, which can register, find, and execute commands correctly.
 
 Step4: Complete AOF and MULTI Commands Transaction for redis.
 
