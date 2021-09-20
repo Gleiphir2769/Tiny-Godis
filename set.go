@@ -119,7 +119,7 @@ func execSInter(db *DB, args [][]byte) redis.Reply {
 		keys[i] = string(arg)
 	}
 	sets := make([]*set.Set, len(keys))
-	for _, key := range keys {
+	for i, key := range keys {
 		s, errReply := db.getAsSet(key)
 		if errReply != nil {
 			return errReply
@@ -127,7 +127,7 @@ func execSInter(db *DB, args [][]byte) redis.Reply {
 		if s == nil {
 			return &reply.EmptyMultiBulkReply{}
 		}
-		sets = append(sets, s)
+		sets[i] = s
 	}
 	if len(sets) <= 2 {
 		return &reply.EmptyMultiBulkReply{}
@@ -155,7 +155,7 @@ func execSInterStore(db *DB, args [][]byte) redis.Reply {
 	}
 
 	sets := make([]*set.Set, len(keys))
-	for _, key := range keys {
+	for i, key := range keys {
 		s, errReply := db.getAsSet(key)
 		if errReply != nil {
 			return errReply
@@ -163,7 +163,7 @@ func execSInterStore(db *DB, args [][]byte) redis.Reply {
 		if s == nil {
 			return reply.MakeIntReply(0)
 		}
-		sets = append(sets, s)
+		sets[i] = s
 	}
 	if len(sets) <= 2 {
 		return reply.MakeIntReply(0)
@@ -184,15 +184,15 @@ func execSUnion(db *DB, args [][]byte) redis.Reply {
 		keys[i] = string(arg)
 	}
 	sets := make([]*set.Set, len(keys))
-	for _, key := range keys {
+	for i, key := range keys {
 		s, errReply := db.getAsSet(key)
 		if errReply != nil {
 			return errReply
 		}
 		if s == nil {
-			return &reply.EmptyMultiBulkReply{}
+			return reply.MakeIntReply(0)
 		}
-		sets = append(sets, s)
+		sets[i] = s
 	}
 	if len(sets) <= 2 {
 		return &reply.EmptyMultiBulkReply{}
@@ -221,7 +221,7 @@ func execSUnionStore(db *DB, args [][]byte) redis.Reply {
 	}
 
 	sets := make([]*set.Set, len(keys))
-	for _, key := range keys {
+	for i, key := range keys {
 		s, errReply := db.getAsSet(key)
 		if errReply != nil {
 			return errReply
@@ -229,7 +229,7 @@ func execSUnionStore(db *DB, args [][]byte) redis.Reply {
 		if s == nil {
 			return reply.MakeIntReply(0)
 		}
-		sets = append(sets, s)
+		sets[i] = s
 	}
 	if len(sets) <= 2 {
 		return reply.MakeIntReply(0)
@@ -250,7 +250,7 @@ func execSDiff(db *DB, args [][]byte) redis.Reply {
 		keys[i] = string(arg)
 	}
 	sets := make([]*set.Set, len(keys))
-	for _, key := range keys {
+	for i, key := range keys {
 		s, errReply := db.getAsSet(key)
 		if errReply != nil {
 			return errReply
@@ -258,7 +258,7 @@ func execSDiff(db *DB, args [][]byte) redis.Reply {
 		if s == nil {
 			return &reply.EmptyMultiBulkReply{}
 		}
-		sets = append(sets, s)
+		sets[i] = s
 	}
 	if len(sets) <= 2 {
 		return &reply.EmptyMultiBulkReply{}
@@ -266,7 +266,7 @@ func execSDiff(db *DB, args [][]byte) redis.Reply {
 	diff := sets[0].Diff(sets[1])
 
 	for i := 2; i < len(sets); i++ {
-		diff = sets[i].Diff(diff)
+		diff = diff.Diff(sets[i])
 	}
 	result := make([][]byte, diff.Len())
 	i := 0
@@ -287,7 +287,7 @@ func execSDiffStore(db *DB, args [][]byte) redis.Reply {
 	}
 
 	sets := make([]*set.Set, len(keys))
-	for _, key := range keys {
+	for i, key := range keys {
 		s, errReply := db.getAsSet(key)
 		if errReply != nil {
 			return errReply
@@ -295,14 +295,14 @@ func execSDiffStore(db *DB, args [][]byte) redis.Reply {
 		if s == nil {
 			return reply.MakeIntReply(0)
 		}
-		sets = append(sets, s)
+		sets[i] = s
 	}
 	if len(sets) <= 2 {
 		return reply.MakeIntReply(0)
 	}
 	diff := sets[0].Diff(sets[1])
 	for i := 2; i < len(sets); i++ {
-		diff = sets[i].Diff(diff)
+		diff = diff.Diff(sets[i])
 	}
 
 	db.PutEntity(dest, &DataEntity{Data: diff})

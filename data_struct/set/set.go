@@ -41,7 +41,7 @@ func (s *Set) ToSlice() []string {
 }
 
 func (s *Set) ForEach(recall dict.RecallFunc) {
-	s.ForEach(recall)
+	s.d.ForEach(recall)
 }
 
 func (s *Set) Intersect(another *Set) *Set {
