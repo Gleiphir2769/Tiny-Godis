@@ -3,6 +3,7 @@ package list
 import (
 	"Tiny-Godis/lib/utils"
 	"container/list"
+	"fmt"
 )
 
 type LinkedList struct {
@@ -24,18 +25,21 @@ func (ll *LinkedList) RPush(value interface{}) {
 
 func (ll *LinkedList) find(index int) *list.Element {
 	ele := ll.l.Front()
-	back := true
+	back := false
+	steps := index
 	if index >= ll.l.Len() || index < 0 {
 		return nil
 	}
 	if index > ll.l.Len()/2 {
+		back = true
+		// golang标准库中的list最后一个节点是哨兵没法用Prev或Next
+		steps = ll.Len() - index - 1
 		ele = ll.l.Back()
-		back = false
-		index = ll.l.Len() - 1 - index
 	}
-	for i := index; i > 0; i-- {
-		if !back {
+	for i := 0; i < steps; i++ {
+		if back {
 			ele = ele.Prev()
+			continue
 		}
 		ele = ele.Next()
 	}
@@ -48,6 +52,14 @@ func (ll *LinkedList) Insert(index int, value interface{}) {
 		return
 	}
 	ll.l.InsertBefore(value, ele)
+}
+
+func (ll LinkedList) Set(index int, value interface{}) {
+	ele := ll.find(index)
+	if ele == nil {
+		return
+	}
+	ele.Value = value
 }
 
 func (ll *LinkedList) LPop() interface{} {
@@ -75,7 +87,9 @@ func (ll *LinkedList) RemoveAllByVal(value interface{}) int {
 			ele = ele.Next()
 			ll.l.Remove(temp)
 			removed++
+			continue
 		}
+		ele = ele.Next()
 	}
 	return removed
 }
@@ -126,19 +140,26 @@ func (ll *LinkedList) Get(index int) (val interface{}) {
 		panic("list is nil")
 	}
 	if index < 0 || index >= ll.Len() {
-		panic("index out of bound")
+		panic(fmt.Sprintf("index '%d' out of bound '%d'", index, ll.Len()))
 	}
 	return ll.find(index).Value
 }
 
 func (ll *LinkedList) Range(start int, stop int) []interface{} {
-	if start >= stop || start < 0 || stop >= ll.Len() {
-		return nil
+	if ll == nil {
+		panic("list is nil")
 	}
+	if start < 0 || start >= ll.Len() {
+		panic("`start` out of range")
+	}
+	if stop < start || stop > ll.Len() {
+		panic("`stop` out of range")
+	}
+
 	rangeList := make([]interface{}, stop-start)
 	se := ll.find(start)
-	for i := start; i < stop; i++ {
-		rangeList = append(rangeList, se)
+	for i := 0; i < stop-start; i++ {
+		rangeList[i] = se.Value
 		se = se.Next()
 	}
 	return rangeList

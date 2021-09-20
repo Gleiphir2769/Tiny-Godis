@@ -5,6 +5,7 @@ import (
 	"Tiny-Godis/interface/redis"
 	"Tiny-Godis/lib/utils"
 	"Tiny-Godis/redis/reply"
+	"fmt"
 	"strconv"
 )
 
@@ -44,7 +45,7 @@ func execLPush(db *DB, args [][]byte) redis.Reply {
 	for _, v := range values {
 		ll.LPush(v)
 	}
-	return reply.MakeIntReply(int64(len(values)))
+	return reply.MakeIntReply(int64(ll.Len()))
 }
 
 func execLPushX(db *DB, args [][]byte) redis.Reply {
@@ -60,7 +61,7 @@ func execLPushX(db *DB, args [][]byte) redis.Reply {
 	for _, v := range values {
 		ll.LPush(v)
 	}
-	return reply.MakeIntReply(int64(len(values)))
+	return reply.MakeIntReply(int64(ll.Len()))
 }
 
 func execRPush(db *DB, args [][]byte) redis.Reply {
@@ -73,7 +74,7 @@ func execRPush(db *DB, args [][]byte) redis.Reply {
 	for _, v := range values {
 		ll.RPush(v)
 	}
-	return reply.MakeIntReply(int64(len(values)))
+	return reply.MakeIntReply(int64(ll.Len()))
 }
 
 func execRPushX(db *DB, args [][]byte) redis.Reply {
@@ -89,7 +90,7 @@ func execRPushX(db *DB, args [][]byte) redis.Reply {
 	for _, v := range values {
 		ll.RPush(v)
 	}
-	return reply.MakeIntReply(int64(len(values)))
+	return reply.MakeIntReply(int64(ll.Len()))
 }
 
 func execLPop(db *DB, args [][]byte) redis.Reply {
@@ -208,6 +209,13 @@ func execLIndex(db *DB, args [][]byte) redis.Reply {
 	if ll == nil {
 		return reply.MakeNullBulkReply()
 	}
+
+	if index >= ll.Len() || index < -ll.Len() {
+		return reply.MakeErrReply(fmt.Sprintf("ERR index '%d' out of range '%d'", index, ll.Len()))
+	} else if index < 0 && index >= -ll.Len() {
+		index = index + ll.Len()
+	}
+
 	v, _ := ll.Get(index).([]byte)
 	return reply.MakeBulkReply(v)
 }
@@ -228,15 +236,13 @@ func execLSet(db *DB, args [][]byte) redis.Reply {
 		return reply.MakeErrReply("ERR no such key")
 	}
 
-	if index >= ll.Len() {
-		return reply.MakeErrReply("ERR index out of range")
-	} else if index < 0 && index > -ll.Len() {
+	if index >= ll.Len() || index < -ll.Len() {
+		return reply.MakeErrReply(fmt.Sprintf("ERR index '%d' out of range '%d'", index, ll.Len()))
+	} else if index < 0 && index >= -ll.Len() {
 		index = index + ll.Len()
-	} else {
-		return reply.MakeErrReply("ERR index out of range")
 	}
 
-	ll.Insert(index, value)
+	ll.Set(index, value)
 	return &reply.OkReply{}
 }
 
@@ -284,8 +290,8 @@ func execLRange(db *DB, args [][]byte) redis.Reply {
 
 	slice := ll.Range(start, stop)
 	result := make([][]byte, len(slice))
-	for _, raw := range slice {
-		result = append(result, raw.([]byte))
+	for i := 0; i < len(slice); i++ {
+		result[i] = slice[i].([]byte)
 	}
 
 	return reply.MakeMultiBulkReply(result)

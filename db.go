@@ -175,6 +175,17 @@ func (db *DB) IsExpired(key string) bool {
 	return expired
 }
 
+// Flush clean database
+func (db *DB) Flush() {
+	db.stopWait.Add(1)
+	defer db.stopWait.Done()
+
+	db.data = dict.MakeConcurrent(dataDictSize)
+	db.ttlMap = dict.MakeConcurrent(ttlDictSize)
+	db.locker = lock.Make(lockerSize)
+
+}
+
 /* ---- Version Function ----- */
 func (db *DB) addVersion(keys ...string) {
 	for _, key := range keys {

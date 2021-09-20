@@ -6,6 +6,7 @@ import (
 	"Tiny-Godis/lib/logger"
 	"Tiny-Godis/redis/server"
 	"Tiny-Godis/tcp"
+	"fmt"
 )
 
 var banner = `
@@ -31,7 +32,7 @@ func main() {
 		panic(err)
 	}
 	cfg := tcp.Config{
-		Address:    config.Properties.Bind,
+		Address:    fmt.Sprintf("%s:%d", config.Properties.Bind, config.Properties.Port),
 		MaxConnect: uint32(config.Properties.MaxClients),
 	}
 	sh := server.MakeHandler()
