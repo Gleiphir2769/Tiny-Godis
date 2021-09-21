@@ -4,8 +4,11 @@ import (
 	"Tiny-Godis/data_struct/dict"
 	"Tiny-Godis/data_struct/lock"
 	"Tiny-Godis/interface/redis"
+	"Tiny-Godis/lib/config"
 	"Tiny-Godis/lib/logger"
 	"Tiny-Godis/lib/timewheel"
+	"Tiny-Godis/redis/reply"
+	"os"
 	"sync"
 	"time"
 )
@@ -25,6 +28,15 @@ type DB struct {
 	locker *lock.Locks
 
 	stopWait sync.WaitGroup
+
+	aofChan     chan *reply.MultiBulkReply
+	aofFile     *os.File
+	aofFileName string
+	// aof goroutine will send msg to main goroutine through this channel when aof tasks finished and ready to shutdown
+	aofFinished chan struct{}
+	// buffer commands received during aof rewrite progress
+	aofRewriteBuffer chan *reply.MultiBulkReply
+	aofPause         sync.RWMutex
 }
 
 type DataEntity struct {
@@ -53,6 +65,22 @@ func MakeDB() *DB {
 		ttlMap:     dict.MakeConcurrent(ttlDictSize),
 		versionMap: dict.MakeConcurrent(lockerSize),
 		locker:     lock.Make(lockerSize),
+	}
+
+	if config.Properties.AppendOnly {
+		db.aofFileName = config.Properties.AppendFilename
+		db.loadAof(0)
+		f, err := os.OpenFile(db.aofFileName, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0600)
+		if err != nil {
+			logger.Warn(err)
+		} else {
+			db.aofFile = f
+			db.aofChan = make(chan *reply.MultiBulkReply, aofQueueSize)
+		}
+		db.aofFinished = make(chan struct{})
+		go func() {
+			db.handleAof()
+		}()
 	}
 
 	return &db

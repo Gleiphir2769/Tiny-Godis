@@ -108,12 +108,13 @@ func execSet(db *DB, args [][]byte) redis.Reply {
 	if ttl != unlimitedTTL {
 		expireTime := time.Now().Add(time.Duration(ttl) * time.Millisecond)
 		db.Expire(string(key), expireTime)
-		// todo：等待aof相关操作
+		db.AddAof(makeAofCmd("SET", args))
+		db.AddAof(makeExpireAofCmd(string(key), expireTime))
 	} else if result > 0 {
 		db.Persist(string(key))
-		// todo：等待aof相关操作
+		db.AddAof(makeAofCmd("SET", args))
 	} else {
-		// todo：等待aof相关操作
+		db.AddAof(makeAofCmd("SET", args))
 	}
 
 	if policy == upsertPolicy || result > 0 {
@@ -127,6 +128,7 @@ func execSetNx(db *DB, args [][]byte) redis.Reply {
 	val := args[1]
 	entity := DataEntity{Data: val}
 	result := db.PutIfAbsent(string(key), &entity)
+	db.AddAof(makeAofCmd("SETNx", args))
 	return reply.MakeIntReply(int64(result))
 }
 
@@ -146,6 +148,8 @@ func execSetEx(db *DB, args [][]byte) redis.Reply {
 	ttl := raw * 1000
 	expireTime := time.Now().Add(time.Duration(ttl) * time.Millisecond)
 	db.Expire(string(key), expireTime)
+	db.AddAof(makeAofCmd("setex", args))
+	db.AddAof(makeExpireAofCmd(string(key), expireTime))
 	return &reply.OkReply{}
 }
 
