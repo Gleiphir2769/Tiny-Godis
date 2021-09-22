@@ -86,6 +86,16 @@ func MakeDB() *DB {
 	return &db
 }
 
+func MakeTmpDB() *DB {
+	db := DB{
+		data:   dict.MakeSimpleDict(),
+		ttlMap: dict.MakeSimpleDict(),
+		locker: lock.Make(lockerSize),
+	}
+
+	return &db
+}
+
 /* ---- Main Function ----- */
 
 func (db *DB) GetEntity(key string) (*DataEntity, bool) {
