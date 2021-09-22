@@ -1,7 +1,7 @@
 package server
 
 import (
-	"Tiny-Godis"
+	"Tiny-Godis/core"
 	"Tiny-Godis/interface/db"
 	"Tiny-Godis/lib/logger"
 	"Tiny-Godis/lib/sync/atomic"
@@ -26,7 +26,7 @@ type Handler struct {
 }
 
 func MakeHandler() *Handler {
-	return &Handler{db: Tiny_Godis.MakeDB()}
+	return &Handler{db: core.MakeDB()}
 }
 
 func (h *Handler) Handle(ctx context.Context, conn net.Conn) {

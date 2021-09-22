@@ -1,4 +1,4 @@
-package Tiny_Godis
+package core
 
 import (
 	"Tiny-Godis/interface/redis"
@@ -92,7 +92,7 @@ func execPExpireAt(db *DB, args [][]byte) redis.Reply {
 	if err != nil {
 		return &reply.SyntaxErrReply{}
 	}
-	expireTime := time.Unix(0, raw * int64(time.Millisecond))
+	expireTime := time.Unix(0, raw*int64(time.Millisecond))
 	_, exist := db.GetEntity(key)
 	if !exist {
 		return reply.MakeIntReply(0)
@@ -114,7 +114,7 @@ func execTTL(db *DB, args [][]byte) redis.Reply {
 
 	expireTime, _ := raw.(time.Time)
 	ttl := expireTime.Sub(time.Now())
-	return reply.MakeIntReply(int64(ttl/time.Second))
+	return reply.MakeIntReply(int64(ttl / time.Second))
 }
 
 func execPersist(db *DB, args [][]byte) redis.Reply {

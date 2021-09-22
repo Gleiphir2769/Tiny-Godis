@@ -1,4 +1,4 @@
-package Tiny_Godis
+package core
 
 import (
 	"Tiny-Godis/data_struct/set"
