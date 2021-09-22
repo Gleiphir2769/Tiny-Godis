@@ -189,5 +189,15 @@ func (db *DB) finishRewrite(tmpFile *os.File) {
 			}
 		}
 	}()
+	close(db.aofRewriteBuffer)
+	db.aofRewriteBuffer = nil
+	_ = db.aofFile.Close()
+	_ = os.Rename(tmpFile.Name(), db.aofFileName)
 
+	// reopen aof file for further write
+	aofFile, err := os.OpenFile(db.aofFileName, os.O_APPEND|os.O_CREATE|os.O_RDWR, 0600)
+	if err != nil {
+		panic(err)
+	}
+	db.aofFile = aofFile
 }
