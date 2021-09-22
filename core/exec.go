@@ -48,9 +48,9 @@ func (db *DB) execSpecialCmd(conn redis.Connection, cmdLine CmdLine) (result red
 	//	return pubsub.Publish(db.hub, cmdLine[1:]), true
 	//case "unsubscribe":
 	//	return pubsub.UnSubscribe(db.hub, c, cmdLine[1:]), true
-	//case "bgrewriteaof":
-	//	// aof.go imports cmd.go, cmd.go cannot import BGRewriteAOF from aof.go
-	//	return BGRewriteAOF(db, cmdLine[1:]), true
+	case "bgrewriteaof":
+		// aof.go imports cmd.go, cmd.go cannot import BGRewriteAOF from aof.go
+		return BGRewriteAOF(db, cmdLine[1:]), true
 	//case "multi":
 	//	if len(cmdLine) != 1 {
 	//		return reply.MakeArgNumErrReply(cmdName), true

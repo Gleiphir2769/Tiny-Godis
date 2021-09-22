@@ -142,7 +142,7 @@ func (db *DB) RewriteAof() {
 	}
 
 	tmpDB := MakeTmpDB()
-	tmpDB.aofFile = db.aofFile
+	tmpDB.aofFileName = db.aofFileName
 	tmpDB.loadAof(fileSize)
 
 	tmpDB.data.ForEach(func(key string, val interface{}) bool {
@@ -169,6 +169,7 @@ func (db *DB) RewriteAof() {
 		return true
 	})
 
+	db.finishRewrite(tmpFile)
 }
 
 func (db *DB) finishRewrite(tmpFile *os.File) {
