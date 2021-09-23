@@ -136,6 +136,12 @@ func execPersist(db *DB, args [][]byte) redis.Reply {
 	return reply.MakeIntReply(1)
 }
 
+// BGRewriteAOF asynchronously rewrites Append-Only-File
+func BGRewriteAOF(db *DB, args [][]byte) redis.Reply {
+	go db.RewriteAof()
+	return reply.MakeStatusReply("Background append only file rewriting started")
+}
+
 func init() {
 	RegisterCommand("Del", execDel, writeAllKeys, undoDel, -2)
 	RegisterCommand("Exists", execExists, readAllKeys, nil, -2)
