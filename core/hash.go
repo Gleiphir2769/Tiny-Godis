@@ -42,6 +42,7 @@ func execHSet(db *DB, args [][]byte) redis.Reply {
 		return err
 	}
 	result := d.Put(string(field), val)
+	db.AddAof(makeAofCmd("HSET", args))
 	return reply.MakeIntReply(int64(result))
 }
 
@@ -61,7 +62,36 @@ func execHSetNX(db *DB, args [][]byte) redis.Reply {
 		return err
 	}
 	result := d.PutIfAbsent(string(field), val)
+	db.AddAof(makeAofCmd("HSETNX", args))
 	return reply.MakeIntReply(int64(result))
+}
+
+func execHMSet(db *DB, args [][]byte) redis.Reply {
+	key := args[0]
+	if len(args[1:])%2 != 0 {
+		return reply.MakeErrReply("invalid number of args")
+	}
+	d, err := db.getOrInitDict(string(key))
+	if err != nil {
+		return err
+	}
+	result := 0
+	for i := 1; i < len(args); i += 2 {
+		field := string(args[i])
+		val := args[i+1]
+		result += d.Put(field, val)
+	}
+	db.AddAof(makeAofCmd("HMSET", args))
+	return &reply.OkReply{}
+}
+
+func undoHMSet(db *DB, args [][]byte) []CmdLine {
+	key := args[0]
+	fields := make([]string, len(args)/2)
+	for i := 0; i < len(args); i++ {
+		fields[i] = string(args[2*i+1])
+	}
+	return rollbackHashFields(db, string(key), fields...)
 }
 
 func execHExists(db *DB, args [][]byte) redis.Reply {
@@ -107,7 +137,7 @@ func execHDel(db *DB, args [][]byte) redis.Reply {
 	}
 
 	if deleted > 0 {
-		//todo: aof
+		db.AddAof(makeAofCmd("HDEL", args))
 	}
 
 	return reply.MakeIntReply(int64(deleted))
@@ -162,4 +192,5 @@ func init() {
 	RegisterCommand("HExists", execHExists, readFirstKey, nil, 3)
 	RegisterCommand("HDel", execHDel, writeFirstKey, undoHDel, -3)
 	RegisterCommand("HLen", execHLen, readFirstKey, nil, 2)
+	RegisterCommand("HMSet", execHMSet, writeFirstKey, undoHMSet, -4)
 }

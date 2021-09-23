@@ -164,3 +164,11 @@ func (ll *LinkedList) Range(start int, stop int) []interface{} {
 	}
 	return rangeList
 }
+
+func (ll *LinkedList) ForEach(recall RecallFunc) {
+	ele := ll.l.Front()
+	for ele != nil {
+		recall(ele)
+		ele = ele.Next()
+	}
+}

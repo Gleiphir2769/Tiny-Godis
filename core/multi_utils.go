@@ -43,7 +43,7 @@ func rollbackGivenKeys(db *DB, keys ...string) []CmdLine {
 		} else {
 			undoCmdLines = append(undoCmdLines,
 				utils.ToCmdLine("DEL", key),
-				EntityToSetCmd(key, entity).Args,
+				EntityToCmd(key, entity).Args,
 				toTTLCmd(db, key).Args)
 		}
 	}

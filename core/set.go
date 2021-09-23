@@ -42,6 +42,7 @@ func execSAdd(db *DB, args [][]byte) redis.Reply {
 	for _, m := range members {
 		result += s.Add(string(m))
 	}
+	db.AddAof(makeAofCmd("SAdd", args))
 	return reply.MakeIntReply(int64(result))
 }
 
@@ -78,6 +79,7 @@ func execSRem(db *DB, args [][]byte) redis.Reply {
 	if s.Len() == 0 {
 		db.Remove(key)
 	}
+	db.AddAof(makeAofCmd("SRem", args))
 	return reply.MakeIntReply(int64(result))
 }
 
@@ -112,7 +114,6 @@ func execSMembers(db *DB, args [][]byte) redis.Reply {
 	return reply.MakeMultiBulkReply(result)
 }
 
-// todo: test
 func execSInter(db *DB, args [][]byte) redis.Reply {
 	keys := make([]string, len(args))
 	for i, arg := range args {
@@ -175,6 +176,7 @@ func execSInterStore(db *DB, args [][]byte) redis.Reply {
 
 	db.PutEntity(dest, &DataEntity{Data: inter})
 
+	db.AddAof(makeAofCmd("SInterStore", args))
 	return reply.MakeIntReply(int64(inter.Len()))
 }
 
@@ -209,6 +211,7 @@ func execSUnion(db *DB, args [][]byte) redis.Reply {
 		i++
 		return true
 	})
+
 	return reply.MakeMultiBulkReply(result)
 }
 
@@ -240,6 +243,8 @@ func execSUnionStore(db *DB, args [][]byte) redis.Reply {
 	}
 
 	db.PutEntity(dest, &DataEntity{Data: union})
+
+	db.AddAof(makeAofCmd("SUnionStore", args))
 
 	return reply.MakeIntReply(int64(union.Len()))
 }
@@ -306,6 +311,8 @@ func execSDiffStore(db *DB, args [][]byte) redis.Reply {
 	}
 
 	db.PutEntity(dest, &DataEntity{Data: diff})
+
+	db.AddAof(makeAofCmd("SDiffStore", args))
 
 	return reply.MakeIntReply(int64(diff.Len()))
 }

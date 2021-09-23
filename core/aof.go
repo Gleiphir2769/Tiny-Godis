@@ -147,7 +147,7 @@ func (db *DB) RewriteAof() {
 
 	tmpDB.data.ForEach(func(key string, val interface{}) bool {
 		entity, _ := val.(*DataEntity)
-		cmdLine := EntityToSetCmd(key, entity)
+		cmdLine := EntityToCmd(key, entity)
 		if cmdLine != nil {
 			_, err = tmpFile.Write(cmdLine.ToBytes())
 			if err != nil {

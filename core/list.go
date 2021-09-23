@@ -9,19 +9,19 @@ import (
 	"strconv"
 )
 
-func (db *DB) getAsList(key string) (*list.LinkedList, reply.ErrorReply) {
+func (db *DB) getAsList(key string) (list.List, reply.ErrorReply) {
 	entity, ok := db.GetEntity(key)
 	if !ok {
 		return nil, nil
 	}
-	value, ok := entity.Data.(*list.LinkedList)
+	value, ok := entity.Data.(list.List)
 	if !ok {
 		return nil, &reply.WrongTypeErrReply{}
 	}
 	return value, nil
 }
 
-func (db *DB) getOrInitList(key string) (*list.LinkedList, reply.ErrorReply) {
+func (db *DB) getOrInitList(key string) (list.List, reply.ErrorReply) {
 	ll, errReply := db.getAsList(key)
 	if errReply != nil {
 		return nil, errReply
@@ -45,6 +45,7 @@ func execLPush(db *DB, args [][]byte) redis.Reply {
 	for _, v := range values {
 		ll.LPush(v)
 	}
+	db.AddAof(makeAofCmd("LPUSH", args))
 	return reply.MakeIntReply(int64(ll.Len()))
 }
 
@@ -61,6 +62,7 @@ func execLPushX(db *DB, args [][]byte) redis.Reply {
 	for _, v := range values {
 		ll.LPush(v)
 	}
+	db.AddAof(makeAofCmd("LPUSHX", args))
 	return reply.MakeIntReply(int64(ll.Len()))
 }
 
@@ -74,6 +76,7 @@ func execRPush(db *DB, args [][]byte) redis.Reply {
 	for _, v := range values {
 		ll.RPush(v)
 	}
+	db.AddAof(makeAofCmd("RPUSH", args))
 	return reply.MakeIntReply(int64(ll.Len()))
 }
 
@@ -90,6 +93,7 @@ func execRPushX(db *DB, args [][]byte) redis.Reply {
 	for _, v := range values {
 		ll.RPush(v)
 	}
+	db.AddAof(makeAofCmd("RPUSHX", args))
 	return reply.MakeIntReply(int64(ll.Len()))
 }
 
@@ -107,6 +111,7 @@ func execLPop(db *DB, args [][]byte) redis.Reply {
 	if ll.Len() == 0 {
 		db.Remove(key)
 	}
+	db.AddAof(makeAofCmd("LPOP", args))
 	return reply.MakeBulkReply(v)
 }
 
@@ -124,6 +129,7 @@ func execRPop(db *DB, args [][]byte) redis.Reply {
 	if ll.Len() == 0 {
 		db.Remove(key)
 	}
+	db.AddAof(makeAofCmd("RPOP", args))
 	return reply.MakeBulkReply(v)
 }
 
@@ -146,6 +152,7 @@ func execRPopLPush(db *DB, args [][]byte) redis.Reply {
 	if sll.Len() == 0 {
 		db.Remove(sourceKey)
 	}
+	db.AddAof(makeAofCmd("RPopLPush", args))
 	return reply.MakeBulkReply(v)
 }
 
@@ -177,7 +184,7 @@ func execLRem(db *DB, args [][]byte) redis.Reply {
 	if ll.Len() == 0 {
 		db.Remove(key)
 	}
-
+	db.AddAof(makeAofCmd("LRem", args))
 	return reply.MakeIntReply(int64(removed))
 }
 
@@ -243,6 +250,7 @@ func execLSet(db *DB, args [][]byte) redis.Reply {
 	}
 
 	ll.Set(index, value)
+	db.AddAof(makeAofCmd("LSet", args))
 	return &reply.OkReply{}
 }
 

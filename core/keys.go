@@ -15,7 +15,7 @@ func execDel(db *DB, args [][]byte) redis.Reply {
 
 	deleted := db.Removes(keys...)
 	if deleted > 0 {
-		// todo: 等待aof支持
+		db.AddAof(makeAofCmd("DEL", args))
 	}
 	return reply.MakeIntReply(int64(deleted))
 }
@@ -52,6 +52,7 @@ func execExpire(db *DB, args [][]byte) redis.Reply {
 	}
 	expireAt := time.Now().Add(expireTime)
 	db.Expire(key, expireAt)
+	db.AddAof(makeExpireAofCmd(key, expireAt))
 	return reply.MakeIntReply(1)
 }
 
@@ -61,12 +62,13 @@ func execExpireAt(db *DB, args [][]byte) redis.Reply {
 	if err != nil {
 		return &reply.SyntaxErrReply{}
 	}
-	expireTime := time.Unix(raw, 0)
+	expireAt := time.Unix(raw, 0)
 	_, exist := db.GetEntity(key)
 	if !exist {
 		return reply.MakeIntReply(0)
 	}
-	db.Expire(key, expireTime)
+	db.Expire(key, expireAt)
+	db.AddAof(makeExpireAofCmd(key, expireAt))
 	return reply.MakeIntReply(1)
 }
 
@@ -83,6 +85,7 @@ func execPExpire(db *DB, args [][]byte) redis.Reply {
 	}
 	expireAt := time.Now().Add(expireTime)
 	db.Expire(key, expireAt)
+	db.AddAof(makeExpireAofCmd(key, expireAt))
 	return reply.MakeIntReply(1)
 }
 
@@ -92,12 +95,13 @@ func execPExpireAt(db *DB, args [][]byte) redis.Reply {
 	if err != nil {
 		return &reply.SyntaxErrReply{}
 	}
-	expireTime := time.Unix(0, raw*int64(time.Millisecond))
+	expireAt := time.Unix(0, raw*int64(time.Millisecond))
 	_, exist := db.GetEntity(key)
 	if !exist {
 		return reply.MakeIntReply(0)
 	}
-	db.Expire(key, expireTime)
+	db.Expire(key, expireAt)
+	db.AddAof(makeExpireAofCmd(key, expireAt))
 	return reply.MakeIntReply(1)
 }
 
@@ -128,6 +132,7 @@ func execPersist(db *DB, args [][]byte) redis.Reply {
 		return reply.MakeIntReply(0)
 	}
 	db.Persist(key)
+	db.AddAof(makeAofCmd("PERSIST", args))
 	return reply.MakeIntReply(1)
 }
 
