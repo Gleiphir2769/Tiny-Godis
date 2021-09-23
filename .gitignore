@@ -22,3 +22,4 @@ qbus-manager*
 vendor/
 log/
 tools/
+logs/
