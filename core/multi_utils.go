@@ -38,7 +38,7 @@ func noPrepare(args [][]byte) ([]string, []string) {
 func rollbackGivenKeys(db *DB, keys ...string) []CmdLine {
 	var undoCmdLines []CmdLine
 	for _, key := range keys {
-		if entity, ok := db.GetEntity(key); ok {
+		if entity, ok := db.GetEntity(key); !ok {
 			undoCmdLines = append(undoCmdLines, utils.ToCmdLine("DEL", key))
 		} else {
 			undoCmdLines = append(undoCmdLines,

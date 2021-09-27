@@ -36,7 +36,7 @@ func isWatchChanged(db *DB, watching map[string]uint32) bool {
 }
 
 func StartMulti(conn redis.Connection) redis.Reply {
-	if !conn.InMultiState() {
+	if conn.InMultiState() {
 		return reply.MakeErrReply("ERR MULTI calls can not be nested")
 	}
 	conn.SetMultiState(true)
