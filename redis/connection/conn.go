@@ -1,6 +1,7 @@
 package connection
 
 import (
+	"Tiny-Godis/lib/sync/atomic"
 	"Tiny-Godis/lib/sync/wait"
 	"net"
 	"sync"
@@ -19,6 +20,11 @@ type Connection struct {
 
 	// password may be changed by CONFIG command during runtime, so store the password
 	password string
+
+	// multi related
+	multiState    atomic.Boolean
+	watchingQueue map[string]uint32
+	queue         [][][]byte
 }
 
 // RemoteAddr returns the remote network address
@@ -66,4 +72,28 @@ func (c *Connection) SetPassword(pw string) {
 
 func (c *Connection) GetPassword() string {
 	return c.password
+}
+
+func (c *Connection) InMultiState() bool {
+	return c.multiState.Get()
+}
+
+func (c *Connection) SetMultiState(state bool) {
+	c.multiState.Set(state)
+}
+
+func (c *Connection) GetQueuedCmdLine() [][][]byte {
+	return c.queue
+}
+
+func (c *Connection) EnqueueCmd(cmdLine [][]byte) {
+	c.queue = append(c.queue, cmdLine)
+}
+
+func (c *Connection) ClearQueuedCmds() {
+	c.queue = nil
+}
+
+func (c *Connection) GetWatching() map[string]uint32 {
+	return c.watchingQueue
 }

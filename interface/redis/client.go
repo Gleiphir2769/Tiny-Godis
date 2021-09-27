@@ -12,11 +12,12 @@ type Connection interface {
 	//SubsCount() int
 	//GetChannels() []string
 	//
-	//// used for `Multi` command
-	//InMultiState() bool
-	//SetMultiState(bool)
-	//GetQueuedCmdLine() [][][]byte
-	//EnqueueCmd([][]byte)
-	//ClearQueuedCmds()
-	//GetWatching() map[string]uint32
+
+	// used for `Multi` command
+	InMultiState() bool
+	SetMultiState(bool)
+	GetQueuedCmdLine() [][][]byte
+	EnqueueCmd([][]byte)
+	ClearQueuedCmds()
+	GetWatching() map[string]uint32
 }

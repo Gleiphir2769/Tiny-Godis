@@ -30,7 +30,9 @@ func (db *DB) Exec(conn redis.Connection, cmdLine CmdLine) (result redis.Reply) 
 		return r
 	}
 
-	// todo: multi相关
+	if conn != nil && conn.InMultiState() {
+		return EnqueueCmd(conn, cmdLine)
+	}
 
 	return db.execNormalCmd(cmdLine)
 }
@@ -51,26 +53,26 @@ func (db *DB) execSpecialCmd(conn redis.Connection, cmdLine CmdLine) (result red
 	case "bgrewriteaof":
 		// aof.go imports cmd.go, cmd.go cannot import BGRewriteAOF from aof.go
 		return BGRewriteAOF(db, cmdLine[1:]), true
-	//case "multi":
-	//	if len(cmdLine) != 1 {
-	//		return reply.MakeArgNumErrReply(cmdName), true
-	//	}
-	//	return StartMulti(db, c), true
-	//case "discard":
-	//	if len(cmdLine) != 1 {
-	//		return reply.MakeArgNumErrReply(cmdName), true
-	//	}
-	//	return DiscardMulti(db, c), true
-	//case "exec":
-	//	if len(cmdLine) != 1 {
-	//		return reply.MakeArgNumErrReply(cmdName), true
-	//	}
-	//	return execMulti(db, c), true
-	//case "watch":
-	//	if !validateArity(-2, cmdLine) {
-	//		return reply.MakeArgNumErrReply(cmdName), true
-	//	}
-	//	return Watch(db, c, cmdLine[1:]), true
+	case "multi":
+		if len(cmdLine) != 1 {
+			return reply.MakeArgNumErrReply(cmdName), true
+		}
+		return StartMulti(conn), true
+	case "discard":
+		if len(cmdLine) != 1 {
+			return reply.MakeArgNumErrReply(cmdName), true
+		}
+		return DiscardMulti(conn), true
+	case "exec":
+		if len(cmdLine) != 1 {
+			return reply.MakeArgNumErrReply(cmdName), true
+		}
+		return ExecMulti(db, conn), true
+	case "watch":
+		if !validateArity(-2, cmdLine) {
+			return reply.MakeArgNumErrReply(cmdName), true
+		}
+		return Watch(db, conn, cmdLine[1:]), true
 	default:
 		return nil, false
 	}
@@ -92,6 +94,19 @@ func (db *DB) execNormalCmd(cmdLine CmdLine) (result redis.Reply) {
 	db.RWLocks(wk, rk)
 	defer db.RWUnLocks(wk, rk)
 
+	return cmd.executor(db, cmdLine[1:])
+}
+
+func (db *DB) ExecWithLock(cmdLine CmdLine) (result redis.Reply) {
+	cmdName := strings.ToLower(string(cmdLine[0]))
+	cmd, ok := cmdTable[cmdName]
+	if !ok {
+		return reply.MakeErrReply("ERR unknown command '" + cmdName + "'")
+	}
+
+	if !validateArity(cmd.arity, cmdLine) {
+		return reply.MakeArgNumErrReply(cmdName)
+	}
 	return cmd.executor(db, cmdLine[1:])
 }
 
