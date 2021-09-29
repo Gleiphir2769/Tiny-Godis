@@ -43,6 +43,7 @@ func (c *Connection) Close() error {
 func MakeConn(conn net.Conn) *Connection {
 	return &Connection{
 		conn: conn,
+		//watchingQueue: make(map[string]uint32),
 	}
 }
 
@@ -83,10 +84,16 @@ func (c *Connection) SetMultiState(state bool) {
 }
 
 func (c *Connection) GetQueuedCmdLine() [][][]byte {
+	if c.queue == nil {
+		c.queue = make([][][]byte, 0)
+	}
 	return c.queue
 }
 
 func (c *Connection) EnqueueCmd(cmdLine [][]byte) {
+	if c.queue == nil {
+		c.queue = make([][][]byte, 0)
+	}
 	c.queue = append(c.queue, cmdLine)
 }
 
@@ -95,5 +102,8 @@ func (c *Connection) ClearQueuedCmds() {
 }
 
 func (c *Connection) GetWatching() map[string]uint32 {
+	if c.watchingQueue == nil {
+		c.watchingQueue = make(map[string]uint32)
+	}
 	return c.watchingQueue
 }
