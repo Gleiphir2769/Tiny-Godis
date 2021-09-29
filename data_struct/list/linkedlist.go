@@ -172,3 +172,14 @@ func (ll *LinkedList) ForEach(recall RecallFunc) {
 		ele = ele.Next()
 	}
 }
+
+func (ll LinkedList) Contain(value interface{}) bool {
+	ele := ll.l.Front()
+	for i := 0; i < ll.Len(); i++ {
+		if utils.Equals(ele.Value, value) {
+			return true
+		}
+		ele = ele.Next()
+	}
+	return false
+}

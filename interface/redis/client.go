@@ -6,12 +6,11 @@ type Connection interface {
 	SetPassword(string)
 	GetPassword() string
 
-	//// client should keep its subscribing channels
-	//Subscribe(channel string)
-	//UnSubscribe(channel string)
-	//SubsCount() int
-	//GetChannels() []string
-	//
+	// client should keep its subscribing channels
+	Subscribe(channel string)
+	UnSubscribe(channel string)
+	SubsCount() int
+	GetChannels() []string
 
 	// used for `Multi` command
 	InMultiState() bool

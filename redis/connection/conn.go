@@ -25,6 +25,9 @@ type Connection struct {
 	multiState    atomic.Boolean
 	watchingQueue map[string]uint32
 	queue         [][][]byte
+
+	// pub/sub
+	subs map[string]struct{}
 }
 
 // RemoteAddr returns the remote network address
@@ -106,4 +109,40 @@ func (c *Connection) GetWatching() map[string]uint32 {
 		c.watchingQueue = make(map[string]uint32)
 	}
 	return c.watchingQueue
+}
+
+func (c *Connection) Subscribe(channel string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if c.subs == nil {
+		c.subs = make(map[string]struct{})
+	}
+
+	c.subs[channel] = struct{}{}
+}
+
+func (c *Connection) UnSubscribe(channel string) {
+	c.mu.Lock()
+	defer c.mu.Unlock()
+
+	if len(c.subs) == 0 {
+		return
+	}
+
+	delete(c.subs, channel)
+}
+
+func (c *Connection) GetChannels() []string {
+	result := make([]string, len(c.subs))
+	i := 0
+	for ch := range c.subs {
+		result[i] = ch
+		i++
+	}
+	return result
+}
+
+func (c *Connection) SubsCount() int {
+	return len(c.subs)
 }
