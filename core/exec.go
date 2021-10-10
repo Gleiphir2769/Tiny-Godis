@@ -3,6 +3,7 @@ package core
 import (
 	"Tiny-Godis/interface/redis"
 	"Tiny-Godis/lib/logger"
+	"Tiny-Godis/pubsub"
 	"Tiny-Godis/redis/reply"
 	"fmt"
 	"runtime/debug"
@@ -41,15 +42,15 @@ func (db *DB) execSpecialCmd(conn redis.Connection, cmdLine CmdLine) (result red
 	cmdName := strings.ToLower(string(cmdLine[0]))
 
 	switch cmdName {
-	//case "subscribe":
-	//	if len(cmdLine) < 2 {
-	//		return reply.MakeArgNumErrReply("subscribe"), true
-	//	}
-	//	return pubsub.Subscribe(db.hub, c, cmdLine[1:]), true
-	//case "publish":
-	//	return pubsub.Publish(db.hub, cmdLine[1:]), true
-	//case "unsubscribe":
-	//	return pubsub.UnSubscribe(db.hub, c, cmdLine[1:]), true
+	case "subscribe":
+		if len(cmdLine) < 2 {
+			return reply.MakeArgNumErrReply("subscribe"), true
+		}
+		return pubsub.Subscribe(db.subs, conn, cmdLine[1:]), true
+	case "publish":
+		return pubsub.Publish(db.subs, cmdLine[1:]), true
+	case "unsubscribe":
+		return pubsub.UnSubscribe(db.subs, conn, cmdLine[1:]), true
 	case "bgrewriteaof":
 		// aof.go imports cmd.go, cmd.go cannot import BGRewriteAOF from aof.go
 		return BGRewriteAOF(db, cmdLine[1:]), true

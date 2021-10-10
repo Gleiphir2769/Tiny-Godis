@@ -57,7 +57,7 @@ func subscribe0(subs *SubPool, conn redis.Connection, channel string) bool {
 	return true
 }
 
-func Unsubscribe(pool *SubPool, conn redis.Connection, args [][]byte) redis.Reply {
+func UnSubscribe(pool *SubPool, conn redis.Connection, args [][]byte) redis.Reply {
 	var channels []string
 	if len(args) > 0 {
 		channels = make([]string, len(args))

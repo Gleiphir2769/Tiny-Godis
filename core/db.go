@@ -7,6 +7,7 @@ import (
 	"Tiny-Godis/lib/config"
 	"Tiny-Godis/lib/logger"
 	"Tiny-Godis/lib/timewheel"
+	"Tiny-Godis/pubsub"
 	"Tiny-Godis/redis/reply"
 	"os"
 	"sync"
@@ -37,6 +38,8 @@ type DB struct {
 	// buffer commands received during aof rewrite progress
 	aofRewriteBuffer chan *reply.MultiBulkReply
 	aofPause         sync.RWMutex
+
+	subs *pubsub.SubPool
 }
 
 type DataEntity struct {
@@ -65,6 +68,7 @@ func MakeDB() *DB {
 		ttlMap:     dict.MakeConcurrent(ttlDictSize),
 		versionMap: dict.MakeConcurrent(lockerSize),
 		locker:     lock.Make(lockerSize),
+		subs:       pubsub.MakeSubPool(),
 	}
 
 	if config.Properties.AppendOnly {
